@@ -8,6 +8,7 @@ This project was inspired by the gcat(https://github.com/byt3bl33d3r/gcat) from 
 Requirements
 =====
 Python 2.x
+PyCrypto module
 
 
 Setup 
