@@ -11,7 +11,11 @@ Requirements
 * PyCrypto module
 
 
-Setup 
+Features
+=====
+
+
+Setup
 =====
 For this to work you need:
 - A Gmail account (**Use a dedicated account! Do not use your personal one!**)
@@ -29,5 +33,10 @@ You're probably going to want to compile ```client.py``` into an executable usin
 **Note: It's recommended you compile client.py using a 32bit Python installation**
 
 
+Improvements
+=====
+
+
 Usage
 =====
+
