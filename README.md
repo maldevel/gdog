@@ -11,7 +11,7 @@ Requirements
 * PyCrypto module
 * WMI module
 * Enum34 module
-
+* Netifaces module
 
 Features
 =====

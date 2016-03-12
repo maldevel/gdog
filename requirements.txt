@@ -1,3 +1,4 @@
 pycrypto
 wmi
 enum34
+netifaces
