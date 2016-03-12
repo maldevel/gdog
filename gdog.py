@@ -187,7 +187,12 @@ class Gdog:
             print "ID: " + botid
             print "DATE: '{}'".format(msg.date)
             print "OS: " + msg.dict['os']
-            print "ADMIN: " + str(msg.dict['admin']) 
+            print "ARCHITECTURE: " + str(msg.dict['arch'])
+            print "CPU: " + str(msg.dict['cpu'])
+            print "GPU: " + str(msg.dict['gpu'])
+            print "MOTHERBOARD: " + str(msg.dict['motherboard'])  
+            print "CHASSIS TYPE: " + str(msg.dict['chassistype'])
+            print "ADMIN: " + str(msg.dict['isAdmin']) 
             print "FG WINDOWS: '{}'\n".format(msg.dict['fgwindow'])
 
     def getJobResults(self, botid, jobid):

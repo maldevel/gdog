@@ -1,1 +1,3 @@
 pycrypto
+wmi
+enum34
