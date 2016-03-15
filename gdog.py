@@ -205,6 +205,7 @@ class Gdog:
             print "Antispyware: '{}'".format(msg.dict['antispyware'])
             print "TAG: " + str(msg.dict['tag'])
             print "CLIENT VERSION: " + str(msg.dict['version'])
+            print "GEOLOCATION: '{}'".format(msg.dict['geolocation'])
             print "FG WINDOWS: '{}'\n".format(msg.dict['fgwindow'])
             
             

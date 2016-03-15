@@ -13,10 +13,12 @@ Requirements
 * Enum34 module
 * Netifaces module
 
+
 Features
 =====
 * Encrypted transportation messages
 * Retrieve system information
+* Retrieve Geolocation information
 * Retrieve list of clients
 * Execute system command
 * Download files from client 
@@ -33,6 +35,12 @@ For this to work you need:
 - A Gmail account (**Use a dedicated account! Do not use your personal one!**)
 - Turn on "Allow less secure apps" under the security settings of the account.
 - You may also have to enable IMAP in the account settings.
+
+
+Download/Installation
+====
+* git clone https://github.com/maldevel/gdog
+* pip install -r requirements.txt --user
 
 
 Contents
@@ -52,6 +60,7 @@ Improvements
 * Generate computer unique id using system information/characteristics (SHA256 hash)
 * Retrieve more system information 
 * Job IDs are random SHA256 hashes
+* Retrieve Geolocation information (City, Country, lat, long, etc..)
 
 
 Usage
