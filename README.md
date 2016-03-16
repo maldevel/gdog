@@ -86,15 +86,23 @@ Commands:
   Commands to execute on an implant
 
   -cmd CMD              Execute a system command
+  -visitwebsite URL     Visit website
+  -message TEXT TITLE   Show message to user
   -tasks                Retrieve running processes
   -services             Retrieve system services
+  -users                Retrieve system users
+  -devices              Retrieve devices(Hardware)
   -download PATH        Download a file from a clients system
+  -download-fromurl URL
+                        Download a file from the web
   -upload SRC DST       Upload a file to the clients system
   -exec-shellcode FILE  Execute supplied shellcode on a client
   -screenshot           Take a screenshot
   -lock-screen          Lock the clients screen
+  -shutdown             Shutdown remote computer
+  -restart              Restart remote computer
+  -logoff               Log off current remote user
   -force-checkin        Force a check in
   -start-keylogger      Start keylogger
   -stop-keylogger       Stop keylogger
-
 ```
