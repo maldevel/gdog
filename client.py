@@ -25,7 +25,7 @@ __author__ = "maldevel"
 __copyright__ = "Copyright (c) 2016 @maldevel"
 __credits__ = ["maldevel", "carnal0wnage", "byt3bl33d3r"]
 __license__ = "GPLv3"
-__version__ = "1.0"
+__version__ = "1.1"
 __maintainer__ = "maldevel"
 
 
