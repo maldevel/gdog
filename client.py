@@ -1045,10 +1045,14 @@ def checkJobs():
             c.logout()
 
             #multiple by jitter 50% and divide by jitter and use as range
-            JITTER_HIGH = ((EMAIL_KNOCK_TIMEOUT * JITTER ) /100.0) * 3
-            JITTER_LOW =  (EMAIL_KNOCK_TIMEOUT * JITTER ) /100.0
+            if JITTER != 100:
+                JITTER_HIGH = ((EMAIL_KNOCK_TIMEOUT * JITTER ) /100.0) * 3
+                JITTER_LOW =  (EMAIL_KNOCK_TIMEOUT * JITTER ) /100.0
 
-            time.sleep(random.randrange(JITTER_LOW, JITTER_HIGH))
+                time.sleep(random.randrange(JITTER_LOW, JITTER_HIGH))
+            else:
+                time.sleep(EMAIL_KNOCK_TIMEOUT)
+
         
         except Exception as e:
             #logging.debug(format_exc())
