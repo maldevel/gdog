@@ -52,7 +52,7 @@ Download/Installation
 ====
 * https://sourceforge.net/projects/pywin32
 * git clone https://github.com/maldevel/gdog
-* pip install -r requirements.txt --user
+* pip install -r requirements.txt
 
 
 Contents
