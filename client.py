@@ -194,7 +194,7 @@ class SystemInfo:
         self.MAC = ':'.join(['{:02x}'.format((uuid.getnode() >> i) & 0xff) for i in range(0,8*6,8)][::-1])
         self.IPv4 = ''
         for iface in netifaces.interfaces():
-            if netifaces.ifaddresses(iface)[netifaces.AF_LINK][0]['addr'] == self.MAC:
+            if netifaces.ifaddresses(iface)[netifaces.AF_LINK][0]['addr'] == self.MAC and netifaces.AF_INET in netifaces.ifaddresses(iface):
                 self.IPv4 = netifaces.ifaddresses(iface).get(netifaces.AF_INET, [])[0]['addr']
         self.Antivirus = []
         objWMI = GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('AntiVirusProduct')
